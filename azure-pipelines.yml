@@ -11,46 +11,36 @@ variables:
 
 stages:
 
-# ---------------- BUILD STAGE ----------------
 - stage: Build
   displayName: Build Stage
   jobs:
   - job: BuildJob
     pool:
-      name: selfhosted-pool
+      name: selfhosted-pool   #  Self-hosted pool
 
     steps:
-    - task: UsePythonVersion@0
-      inputs:
-        versionSpec: '$(pythonVersion)'
-      displayName: "Use Python $(pythonVersion)"
-
     - script: |
-        echo "Python Version:"
+        echo Python Version
         python --version
       displayName: Check Python
 
     - script: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-      workingDirectory: $(projectRoot)
       displayName: Install Dependencies
 
     - task: ArchiveFiles@2
-      displayName: Archive Application
       inputs:
-        rootFolderOrFile: '$(projectRoot)'
+        rootFolderOrFile: '.'
         includeRootFolder: false
         archiveType: zip
         archiveFile: $(Build.ArtifactStagingDirectory)/app.zip
         replaceExistingArchive: true
+      displayName: Archive Files
 
     - publish: $(Build.ArtifactStagingDirectory)/app.zip
       artifact: drop
-      displayName: Publish Artifact
 
-
-# ---------------- DEPLOY STAGE ----------------
 - stage: Deploy
   displayName: Deploy Stage
   dependsOn: Build
@@ -58,24 +48,16 @@ stages:
 
   jobs:
   - deployment: DeploymentJob
-    displayName: Deploy to Azure Web App
-    environment: $(environmentName)
-
     pool:
-      name: selfhosted-pool
+      name: selfhosted-pool   #  Self-hosted pool again
+
+    environment: E-commSemanticSearch
 
     strategy:
       runOnce:
         deploy:
           steps:
-
-          - task: UsePythonVersion@0
-            inputs:
-              versionSpec: '$(pythonVersion)'
-            displayName: Use Python
-
           - task: AzureWebApp@1
-            displayName: Deploy to Azure Web App
             inputs:
               azureSubscription: $(azureServiceConnectionId)
               appType: webAppLinux

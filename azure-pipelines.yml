@@ -5,11 +5,10 @@ variables:
   azureServiceConnection: 'conn1'
   webAppName: 'EcommerceDemo'
   resourceGroupName: 'ecommercedemo_group'
-  pythonVersion: '3.11'
 
 stages:
 
-# ---------------- BUILD STAGE ---------------- #
+# ---------------- BUILD ---------------- #
 
 - stage: Build
   displayName: Build Stage
@@ -21,28 +20,18 @@ stages:
 
     steps:
 
-    - task: UsePythonVersion@0
-      displayName: Use Python $(pythonVersion)
-      inputs:
-        versionSpec: '$(pythonVersion)'
-
     - script: |
-        echo "Python Version"
+        echo "Checking Python"
         python --version
-      displayName: Check Python Version
+      displayName: Check Python
 
     - script: |
-        echo "Upgrading pip"
         python -m pip install --upgrade pip
-      displayName: Upgrade pip
-
-    - script: |
-        echo "Installing dependencies"
         pip install -r requirements.txt
       displayName: Install Dependencies
 
     - task: ArchiveFiles@2
-      displayName: Archive Application Files
+      displayName: Archive Files
       inputs:
         rootFolderOrFile: '.'
         includeRootFolder: false
@@ -52,10 +41,9 @@ stages:
 
     - publish: $(Build.ArtifactStagingDirectory)/app.zip
       artifact: drop
-      displayName: Publish Build Artifact
 
 
-# ---------------- DEPLOY STAGE ---------------- #
+# ---------------- DEPLOY ---------------- #
 
 - stage: Deploy
   displayName: Deploy Stage

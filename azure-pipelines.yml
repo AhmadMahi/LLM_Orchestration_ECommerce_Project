@@ -1,27 +1,24 @@
+
 trigger:
 - main
 
 variables:
-  azureServiceConnection: 'conn1'
+  azureServiceConnectionId: '1b9e0d84-cfd8-4fa9-92eb-41812bc3f457'
   webAppName: 'EcommerceDemo'
-  resourceGroupName: 'ecommercedemo_group'
+  pythonVersion: '3.11'
 
 stages:
 
-# ---------------- BUILD ---------------- #
-
 - stage: Build
   displayName: Build Stage
-
   jobs:
   - job: BuildJob
     pool:
-      name: selfhosted-pool
+      name: selfhosted-pool   # Self-hosted pool
 
     steps:
-
     - script: |
-        echo "Checking Python"
+        echo Python Version
         python --version
       displayName: Check Python
 
@@ -43,29 +40,25 @@ stages:
       artifact: drop
 
 
-# ---------------- DEPLOY ---------------- #
-
 - stage: Deploy
   displayName: Deploy Stage
   dependsOn: Build
   condition: succeeded()
 
   jobs:
-  - job: DeployJob
+  - deployment: DeploymentJob
     pool:
-      name: selfhosted-pool
+      name: selfhosted-pool   # Self-hosted pool again
 
-    steps:
+    environment: EcommerceDemo
 
-    - download: current
-      artifact: drop
-
-    - task: AzureWebApp@1
-      displayName: Deploy to Azure Web App
-      inputs:
-        azureSubscription: $(azureServiceConnection)
-        appType: webAppLinux
-        appName: $(webAppName)
-        resourceGroupName: $(resourceGroupName)
-        package: $(Pipeline.Workspace)/drop/app.zip
-        deploymentMethod: zipDeploy
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - task: AzureWebApp@1
+            inputs:
+              azureSubscription: $(azureServiceConnectionId)
+              appType: webAppLinux
+              appName: $(webAppName)
+              package: $(Pipeline.Workspace)/drop/app.zip

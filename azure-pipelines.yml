@@ -1,1 +1,82 @@
 
+trigger:
+- main
+
+variables:
+  azureServiceConnection: '1b9e0d84-cfd8-4fa9-92eb-41812bc3f457'   # Service connection name
+  webAppName: 'EcommerceDemo'
+  agentPool: 'selfhosted-pool'
+  pythonVersion: '3.11'
+
+stages:
+
+# ---------------- BUILD STAGE ---------------- #
+
+- stage: Build
+  displayName: Build Application
+  jobs:
+  - job: BuildJob
+    pool:
+      name: $(agentPool)
+
+    steps:
+
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: '$(pythonVersion)'
+      displayName: "Use Python $(pythonVersion)"
+
+    - script: |
+        echo "Checking Python Version"
+        python --version
+      displayName: Check Python Version
+
+    - script: |
+        echo "Upgrading pip"
+        python -m pip install --upgrade pip
+      displayName: Upgrade pip
+
+    - script: |
+        echo "Installing dependencies"
+        pip install -r requirements.txt
+      displayName: Install dependencies
+
+    - task: ArchiveFiles@2
+      displayName: Zip application files
+      inputs:
+        rootFolderOrFile: $(System.DefaultWorkingDirectory)
+        includeRootFolder: false
+        archiveType: zip
+        archiveFile: $(Build.ArtifactStagingDirectory)/app.zip
+        replaceExistingArchive: true
+
+    - publish: $(Build.ArtifactStagingDirectory)/app.zip
+      artifact: drop
+      displayName: Publish Build Artifact
+
+
+# ---------------- DEPLOY STAGE ---------------- #
+
+- stage: Deploy
+  displayName: Deploy to Azure Web App
+  dependsOn: Build
+  condition: succeeded()
+
+  jobs:
+  - job: DeployJob
+    displayName: Deploy Application
+    pool:
+      name: $(agentPool)
+
+    steps:
+
+    - download: current
+      artifact: drop
+
+    - task: AzureWebApp@1
+      displayName: Deploy to Azure Web App
+      inputs:
+        azureSubscription: $(azureServiceConnection)
+        appType: webAppLinux
+        appName: $(webAppName)
+        package: $(Pipeline.Workspace)/drop/app.zip

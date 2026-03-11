@@ -2,10 +2,10 @@ trigger:
 - main
 
 variables:
-  azureServiceConnectionId: '69be4ae1-d766-4f71-9738-fec5b19e0dd4'
-  webAppName: 'ECommerec-Web-App-Semantic-Search'
+  azureServiceConnectionId: '1b9e0d84-cfd8-4fa9-92eb-41812bc3f457'
+  webAppName: 'EcommerceDemo'
   vmImageName: 'ubuntu-latest'
-  environmentName: 'ECommerec-Web-App-Semantic-Search'
+  environmentName: 'EcommerceDemo'
   projectRoot: $(System.DefaultWorkingDirectory)
   pythonVersion: '3.11'
 
@@ -51,7 +51,7 @@ stages:
     pool:
       name: selfhosted-pool   #  Self-hosted pool again
 
-    environment: E-commSemanticSearch
+    environment: EcommerceDemo
 
     strategy:
       runOnce:

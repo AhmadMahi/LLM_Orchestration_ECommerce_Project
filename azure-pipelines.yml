@@ -1,11 +1,9 @@
-
 trigger:
 - main
 
 variables:
-  azureServiceConnection: '1b9e0d84-cfd8-4fa9-92eb-41812bc3f457'   # Service connection name
+  azureServiceConnectionId: '1b9e0d84-cfd8-4fa9-92eb-41812bc3f457'
   webAppName: 'EcommerceDemo'
-  agentPool: 'selfhosted-pool'
   pythonVersion: '3.11'
 
 stages:
@@ -13,38 +11,27 @@ stages:
 # ---------------- BUILD STAGE ---------------- #
 
 - stage: Build
-  displayName: Build Application
+  displayName: Build Stage
   jobs:
   - job: BuildJob
     pool:
-      name: $(agentPool)
+      name: selfhosted-pool
 
     steps:
-
-    - task: UsePythonVersion@0
-      inputs:
-        versionSpec: '$(pythonVersion)'
-      displayName: "Use Python $(pythonVersion)"
-
     - script: |
-        echo "Checking Python Version"
+        echo "Python Version"
         python --version
-      displayName: Check Python Version
+      displayName: Check Python
 
     - script: |
-        echo "Upgrading pip"
         python -m pip install --upgrade pip
-      displayName: Upgrade pip
-
-    - script: |
-        echo "Installing dependencies"
         pip install -r requirements.txt
-      displayName: Install dependencies
+      displayName: Install Dependencies
 
     - task: ArchiveFiles@2
-      displayName: Zip application files
+      displayName: Archive Files
       inputs:
-        rootFolderOrFile: $(System.DefaultWorkingDirectory)
+        rootFolderOrFile: '.'
         includeRootFolder: false
         archiveType: zip
         archiveFile: $(Build.ArtifactStagingDirectory)/app.zip
@@ -52,31 +39,30 @@ stages:
 
     - publish: $(Build.ArtifactStagingDirectory)/app.zip
       artifact: drop
-      displayName: Publish Build Artifact
 
 
 # ---------------- DEPLOY STAGE ---------------- #
 
 - stage: Deploy
-  displayName: Deploy to Azure Web App
+  displayName: Deploy Stage
   dependsOn: Build
   condition: succeeded()
 
   jobs:
-  - job: DeployJob
-    displayName: Deploy Application
+  - deployment: DeploymentJob
     pool:
-      name: $(agentPool)
+      name: selfhosted-pool
 
-    steps:
+    environment: E-commSemanticSearch
 
-    - download: current
-      artifact: drop
-
-    - task: AzureWebApp@1
-      displayName: Deploy to Azure Web App
-      inputs:
-        azureSubscription: $(azureServiceConnection)
-        appType: webAppLinux
-        appName: $(webAppName)
-        package: $(Pipeline.Workspace)/drop/app.zip
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - task: AzureWebApp@1
+            displayName: Deploy to Azure Web App
+            inputs:
+              azureSubscription: $(azureServiceConnectionId)
+              appType: webAppLinux
+              appName: $(webAppName)
+              package: $(Pipeline.Workspace)/drop/app.zip
